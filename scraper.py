@@ -6,14 +6,14 @@ import threading
 
 def download_tile(url, headers, channels):
     response = requests.get(url, headers=headers)
-    arr =  np.asarray(bytearray(response.content), dtype=np.uint8)
-    
+    arr = np.asarray(bytearray(response.content), dtype=np.uint8)
+
     if channels == 3:
         return cv2.imdecode(arr, 1)
     return cv2.imdecode(arr, -1)
 
 
-# Mercator projection 
+# Mercator projection
 # https://developers.google.com/maps/documentation/javascript/examples/map-coordinates
 def project_with_scale(lat: float, lon: float, scale: float):
     siny = np.sin(lat * np.pi / 180)
@@ -23,9 +23,18 @@ def project_with_scale(lat: float, lon: float, scale: float):
     return x, y
 
 
-def download_image(lat1: float, lon1: float, lat2: float, lon2: float,
-    zoom: int, url: str, headers: dict, tile_size: int = 256, channels: str = 3,
-    resolution_scaling=1) -> np.ndarray:
+def download_image(
+    lat1: float,
+    lon1: float,
+    lat2: float,
+    lon2: float,
+    zoom: int,
+    url: str,
+    headers: dict,
+    tile_size: int = 256,
+    channels: int = 3,
+    resolution_scaling:float = 1.0,
+) -> np.ndarray:
     """
     Downloads a map region. Returns an image stored either in BGR or BGRA as a `numpy.ndarray`.
 
@@ -68,7 +77,9 @@ def download_image(lat1: float, lon1: float, lat2: float, lon2: float,
 
     def build_row(row_number: int):
         for j in range(tl_tile_x, br_tile_x + 1):
-            tile = download_tile(url.format(x=j, y=row_number, z=zoom), headers, channels)
+            tile = download_tile(
+                url.format(x=j, y=row_number, z=zoom), headers, channels
+            )
 
             # Find the pixel coordinates of the new tile relative to the image
             tl_rel_x = j * tile_size - tl_pixel_x
@@ -95,19 +106,20 @@ def download_image(lat1: float, lon1: float, lat2: float, lon2: float,
         thread = threading.Thread(target=build_row, args=[i])
         thread.start()
         threads.append(thread)
-    
+
     for thread in threads:
         thread.join()
-    
+
     if resolution_scaling != 1:
         return resize_image(img, resolution_scaling)
 
     return img
 
 
-def image_size(lat1: float, lon1: float, lat2: float,
-    lon2: float, zoom: int, tile_size: int = 256):
-    """ Calculates the size of an image without downloading it. Returns a `(width, height)` tuple. """
+def image_size(
+    lat1: float, lon1: float, lat2: float, lon2: float, zoom: int, tile_size: int = 256
+):
+    """Calculates the size of an image without downloading it. Returns a `(width, height)` tuple."""
 
     scale = 1 << zoom
     tl_proj_x, tl_proj_y = project_with_scale(lat1, lon1, scale)
@@ -120,6 +132,6 @@ def image_size(lat1: float, lon1: float, lat2: float,
 
     return abs(tl_pixel_x - br_pixel_x), br_pixel_y - tl_pixel_y
 
+
 def resize_image(img: np.ndarray, scale_factor: float):
-    return cv2.resize(img, (0, 0), fx = scale_factor, fy = scale_factor)
-    
+    return cv2.resize(img, (0, 0), fx=scale_factor, fy=scale_factor)
