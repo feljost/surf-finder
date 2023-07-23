@@ -15,7 +15,7 @@ def download_tile(url, headers, channels):
 
 # Mercator projection 
 # https://developers.google.com/maps/documentation/javascript/examples/map-coordinates
-def project_with_scale(lat, lon, scale):
+def project_with_scale(lat: float, lon: float, scale: float):
     siny = np.sin(lat * np.pi / 180)
     siny = min(max(siny, -0.9999), 0.9999)
     x = scale * (0.5 + lon / 360)
@@ -24,7 +24,8 @@ def project_with_scale(lat, lon, scale):
 
 
 def download_image(lat1: float, lon1: float, lat2: float, lon2: float,
-    zoom: int, url: str, headers: dict, tile_size: int = 256, channels: str = 3) -> np.ndarray:
+    zoom: int, url: str, headers: dict, tile_size: int = 256, channels: str = 3,
+    resolution_scaling=1) -> np.ndarray:
     """
     Downloads a map region. Returns an image stored either in BGR or BGRA as a `numpy.ndarray`.
 
@@ -65,7 +66,7 @@ def download_image(lat1: float, lon1: float, lat2: float, lon2: float,
     img_h = br_pixel_y - tl_pixel_y
     img = np.ndarray((img_h, img_w, channels), np.uint8)
 
-    def build_row(row_number):
+    def build_row(row_number: int):
         for j in range(tl_tile_x, br_tile_x + 1):
             tile = download_tile(url.format(x=j, y=row_number, z=zoom), headers, channels)
 
@@ -98,6 +99,9 @@ def download_image(lat1: float, lon1: float, lat2: float, lon2: float,
     for thread in threads:
         thread.join()
     
+    if resolution_scaling != 1:
+        return resize_image(img, resolution_scaling)
+
     return img
 
 
@@ -115,3 +119,7 @@ def image_size(lat1: float, lon1: float, lat2: float,
     br_pixel_y = int(br_proj_y * tile_size)
 
     return abs(tl_pixel_x - br_pixel_x), br_pixel_y - tl_pixel_y
+
+def resize_image(img: np.ndarray, scale_factor: float):
+    return cv2.resize(img, (0, 0), fx = scale_factor, fy = scale_factor)
+    
