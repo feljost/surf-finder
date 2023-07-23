@@ -116,22 +116,33 @@ def download_image(
     return img
 
 
-def image_size(
-    lat1: float, lon1: float, lat2: float, lon2: float, zoom: int, tile_size: int = 256
-):
-    """Calculates the size of an image without downloading it. Returns a `(width, height)` tuple."""
-
-    scale = 1 << zoom
-    tl_proj_x, tl_proj_y = project_with_scale(lat1, lon1, scale)
-    br_proj_x, br_proj_y = project_with_scale(lat2, lon2, scale)
-
-    tl_pixel_x = int(tl_proj_x * tile_size)
-    tl_pixel_y = int(tl_proj_y * tile_size)
-    br_pixel_x = int(br_proj_x * tile_size)
-    br_pixel_y = int(br_proj_y * tile_size)
-
-    return abs(tl_pixel_x - br_pixel_x), br_pixel_y - tl_pixel_y
-
-
 def resize_image(img: np.ndarray, scale_factor: float):
     return cv2.resize(img, (0, 0), fx=scale_factor, fy=scale_factor)
+
+
+def calculate_box(lat: float, lon:float, side_length_km:float):
+    """
+    Calculate the corners of a square box around a given latitude and longitude.
+
+    Parameters:
+    lat (float): Latitude of the center point.
+    lon (float): Longitude of the center point.
+    side_length_km (float): Side length of the square box in kilometers.
+
+    Returns:
+    tuple: Two tuples representing the top-left and bottom-right corners of the box.
+           Each tuple contains two elements: latitude and longitude.
+    """
+    # Constants for degrees to km conversion
+    one_deg_lat_km = 111.32
+    one_deg_lon_km = one_deg_lat_km * np.cos(np.radians(lat))
+    
+    # Calculate adjustments (offsets = side length / 2 in lat lon)
+    lat_adj = side_length_km / (2 * one_deg_lat_km)
+    lon_adj = side_length_km / (2 * one_deg_lon_km)
+
+    # Calculate corners
+    top_left = (lat + lat_adj, lon - lon_adj)
+    bottom_right = (lat - lat_adj, lon + lon_adj)
+
+    return top_left, bottom_right
