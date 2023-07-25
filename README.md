@@ -3,8 +3,10 @@
 A ML approach to find new surf spots on the world. The general idea is to find Coasts with Waves that have potential to be a surf spot. Perhaps we can find some hidden gems :).
 
 ## To do
-- Find coordinates of surf spots
+- ~~Find coordinates of surf spots~~
 - Scrape satelite images
+    - ~~surf spots~~
+    - non surf spots
 - Pre-process images
 - Select good example images for FewShot Learning Model
 - Train model
